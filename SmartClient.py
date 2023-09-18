@@ -27,7 +27,7 @@ def sendRequest(HOST, PORT):
     return data
 
 def parseResp(data):
-    parsedData = data.decode().split('\r\n ')
+    parsedData = data.decode().split('\r\n')
     return parsedData
 
 def parseURL(input):  
