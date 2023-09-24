@@ -23,12 +23,19 @@ def main():
     HOST = match.group(3)
     print("Hostname obtained: " + HOST)
     print("Protocol: " + PROTOCOL)
-    if match.group(4) !='':
-        PORT = int(match.group(4))
+    if match.group(5) !='':
+        PORT = int(match.group(5))
     else:
-        PORT = int(80)
+        if PROTOCOL == 'HTTP':
+            PORT = int(80)
+        else:
+            PORT = int(443)
     print("Port: " + str(PORT))
-    ENDPOINT = '/'
+    if match.group(4) != '':
+        ENDPOINT = match.group(5)
+    else:
+        ENDPOINT = '/'
+    print("Endpoint: " + str(ENDPOINT)) 
     data = sendRequest(PROTOCOL, HOST, PORT, ENDPOINT)
     print("Received: ", repr(data))
     print("-----Response Header-----")
@@ -60,7 +67,7 @@ def parseResp(data):
     return d
 
 def parseURL(input):
-    pattern = re.compile(r'((https|http)://)?(www.[\w]+.[\w]+):?(\d*)', re.IGNORECASE)
+    pattern = re.compile(r'((https|http)://)?([a-zA-Z.]+):?(/[\w]+)(\d*)', re.IGNORECASE)
     return pattern.match(input)
 
 if __name__ == '__main__':
