@@ -67,7 +67,7 @@ def parseResp(data):
     return d
 
 def parseURL(input):
-    pattern = re.compile(r'((https|http)://)?([a-zA-Z.]+):?(/[\w]+)(\d*)', re.IGNORECASE)
+    pattern = re.compile(r'((https|http)://)?([a-zA-Z.]+):?([/\w]+)(\d*)', re.IGNORECASE)
     return pattern.match(input)
 
 if __name__ == '__main__':
