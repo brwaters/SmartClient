@@ -16,47 +16,52 @@ def main():
     URL = sys.argv[1].strip()
     print("URL Entered: " + URL)
     match = parseURL(URL)
-    if match.group(2) is not None and not '':
-        PROTOCOL = match.group(2).upper()
-    else:
-        PROTOCOL = 'HTTP'
-    HOST = match.group(3)
-    print("Hostname obtained: " + HOST)
-    print("Protocol: " + PROTOCOL)
-    if match.group(5) !='':
-        PORT = int(match.group(5))
-    else:
-        if PROTOCOL == 'HTTP':
-            PORT = int(80)
-        else:
-            PORT = int(443)
-    print("Port: " + str(PORT))
-    if match.group(4) != '':
-        ENDPOINT = match.group(5)
-    else:
-        ENDPOINT = '/'
-    print("Endpoint: " + str(ENDPOINT)) 
-    data = sendRequest(PROTOCOL, HOST, PORT, ENDPOINT)
+    PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
+    print("Endpoint: " + str(ENDPOINT))
+    print("-----Request Header-----")
+    print("GET " + URL + ' ' + PROTOCOL + "/1.1")
+    print("Host: " + HOST)
+    print("Connection: Keep-Alive")
+    print("-----Request End-----")
+    data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
     print("Received: ", repr(data))
     print("-----Response Header-----")
-    for key,value in data.items():
-        print(key + ': '+ value)
+    if data:
+        for key,value in data.items():
+            print(key + ': '+ value)
 
-def sendRequest(PROTOCOL, HOST, PORT, ENDPOINT):
+def sendRequest(PROTOCOL, HOST, ENDPOINT, PORT):
     with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         s.sendall(b'GET ' + bytes(ENDPOINT, 'utf-8') + b' ' + bytes(PROTOCOL,'utf-8') + b'/1.1\r\nHost: ' + bytes(HOST, 'utf-8') + b'\r\nConnection: Keep-Alive\r\nAccept: text/html\r\n\r\n')
+        # response = b""
+        # while True:
+        #     data = s.recv(1024)
+        #     if not data:
+        #         break
+        #     response += data
+        # data = parseResp(response)
         data = parseResp(s.recv(1024))
+        print("Received: ", repr(data))
         print(data.get('HTTP/1.1'))
         print(data.get('HTTP/1.0'))
         # if (data.get('HTTP/1.1') == '302 Moved Temporarily' or '301 Moved Permanently'):
-            # print('moved 1.1')
-            # parseURL(data.get('HTTP/1.1'))
-            # ENDPOINT = data.get()
-        while not (data.get('HTTP/1.0') == '302 Moved Temporarily' or '301 Moved Permanently'):
+        #     print('moved 1.1')
+        #     match = parseURL(data.get('Location'))
+        #     PROTOCOL = match.group(2).upper()
+        #     ENDPOINT = match.group(3)
+        #     print(match.group(3)+ "\n")
+        #     sendRequest(PROTOCOL, HOST, PORT, ENDPOINT)
+        if (data.get('HTTP/1.0') == ('302 Moved Temporarily' or '301 Moved Permanently')):
             print('moved 1.0')
+            print(data.get('Location'))
             match = parseURL(data.get('Location'))
-            sendRequest(PROTOCOL, HOST, PORT, ENDPOINT = match.group(3))
+            PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
+            print(ENDPOINT)
+            data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
+            data = parseResp(s.recv(1024))
+        else:
+            return data
     return data
 
 def parseResp(data):
@@ -67,8 +72,30 @@ def parseResp(data):
     return d
 
 def parseURL(input):
-    pattern = re.compile(r'((https|http)://)?([a-zA-Z.]+):?([/\w]+)(\d*)', re.IGNORECASE)
+    pattern = re.compile(r'((https|http)://)?([a-zA-Z.]+)([/\w]*):?(\d*)', re.IGNORECASE)
     return pattern.match(input)
+
+def assignRequestParameters(match):
+    if match.group(2) is not None and not '':
+        PROTOCOL = match.group(2).upper()
+    else:
+        PROTOCOL = 'HTTP'
+    HOST = match.group(3)
+    print("Hostname obtained: " + HOST)
+    print("Protocol: " + PROTOCOL)
+    if match.group(4) != '':
+        ENDPOINT = match.group(4)
+    else:
+        ENDPOINT = '/'
+    if match.group(5) !='':
+        PORT = int(match.group(5))
+    else:
+        if PROTOCOL == 'HTTPS':
+            PORT = int(443)
+        else:
+            PORT = int(80)
+    print("Port: " + str(PORT))
+    return PROTOCOL, HOST, ENDPOINT, PORT
 
 if __name__ == '__main__':
     main()
