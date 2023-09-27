@@ -10,11 +10,19 @@ import ssl
 
 # This is for checking HTTPS from tutorials
 # context = ssl.create_default_context()
+# context.set_alpn_protocols(['http/1.1','h2'])
 # conn = context.wrap_socket(socket.socket(socket.AF_INET), server_hostname="www.google.ca")
+# conn.connect(("www.google.ca", 443))
+# conn.sendall(b'GET / HTTP/1.1\r\nHost: www.gooogle.ca\r\n\r\n')
+# list =  conn.selected_alpn_protocol()
+# if list and'h2' in list:
+#     print('HTTP2 supported')
+# else:
+#     print("HTTP2 not supported")
 
 def main():
     URL = sys.argv[1].strip()
-    print("URL Entered: " + URL)
+    # print("URL Entered: " + URL)
     match = parseURL(URL)
     PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
     data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
@@ -37,27 +45,27 @@ def sendRequest(PROTOCOL, HOST, ENDPOINT, PORT):
         #     response += data
         # data = parseResp(response)
         data = parseResp(s.recv(1024 * 4))
-        print(data)
-        print("Received: ", repr(data))
-        print(data.get('HTTP/1.1'))
-        print(data.get('HTTP/1.0'))
+        # print(data)
+        # print("Received: ", repr(data))
+        # print(data.get('HTTP/1.1'))
+        # print(data.get('HTTP/1.0'))
         if (data.get('HTTP/1.1') == ('302 Moved Temporarily' or '301 Moved Permanently')):
-            print('moved 1.1')
-            print(data.get('Location'))
+            # print('moved 1.1')
+            # print(data.get('Location'))
             match = parseURL(data.get('Location'))
             PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
-            print(ENDPOINT)
+            # print(ENDPOINT)
             data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
-            data = parseResp(s.recv(1024 * 4))
+            
         if (data.get('HTTP/1.0') == ('302 Moved Temporarily' or '301 Moved Permanently')):
-            print('moved 1.0')
-            print(data.get('Location'))
+            # print('moved 1.0')
+            # print(data.get('Location'))
             match = parseURL(data.get('Location'))
             PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
-            print(ENDPOINT)
+            # print(ENDPOINT)
             data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
-            data = parseResp(s.recv(1024 * 4))
         else:
+            # data = parseResp(s.recv(1024 * 4))
             return data
 
 def parseResp(data):
@@ -68,7 +76,7 @@ def parseResp(data):
     return d
 
 def parseURL(input):
-    pattern = re.compile(r'((https|http)://)?([a-zA-Z.]+)([/\w]*):?(\d*)', re.IGNORECASE)
+    pattern = re.compile(r'((https|http)://)?([a-zA-Z.]+)([/\w]*.?[\w]*):?(\d*)', re.IGNORECASE)
     return pattern.match(input)
 
 def assignRequestParameters(match):
@@ -77,8 +85,8 @@ def assignRequestParameters(match):
     else:
         PROTOCOL = 'HTTP'
     HOST = match.group(3)
-    print("Hostname obtained: " + HOST)
-    print("Protocol: " + PROTOCOL)
+    # print("Hostname obtained: " + HOST)
+    # print("Protocol: " + PROTOCOL)
     if match.group(4) != '':
         ENDPOINT = match.group(4)
     else:
@@ -90,8 +98,8 @@ def assignRequestParameters(match):
             PORT = int(443)
         else:
             PORT = int(80)
-    print("Port: " + str(PORT))
-    print("Endpoint: " + str(ENDPOINT))
+    # print("Port: " + str(PORT))
+    # print("Endpoint: " + str(ENDPOINT))
     print("-----Request Header-----")
     print("GET " + PROTOCOL.lower() + "://" + HOST + ENDPOINT + ' ' + PROTOCOL + "/1.1")
     print("Host: " + HOST)
