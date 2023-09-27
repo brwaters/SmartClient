@@ -17,20 +17,15 @@ def main():
     print("URL Entered: " + URL)
     match = parseURL(URL)
     PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
-    print("Endpoint: " + str(ENDPOINT))
-    print("-----Request Header-----")
-    print("GET " + URL + ' ' + PROTOCOL + "/1.1")
-    print("Host: " + HOST)
-    print("Connection: Keep-Alive")
-    print("-----Request End-----")
     data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
-    print("Received: ", repr(data))
     print("-----Response Header-----")
     if data:
         for key,value in data.items():
             print(key + ': '+ value)
 
 def sendRequest(PROTOCOL, HOST, ENDPOINT, PORT):
+    if not (PROTOCOL or HOST or ENDPOINT or PORT):
+        return None
     with socket.socket(socket.AF_INET,socket.SOCK_STREAM) as s:
         s.connect((HOST, PORT))
         s.sendall(b'GET ' + bytes(ENDPOINT, 'utf-8') + b' ' + bytes(PROTOCOL,'utf-8') + b'/1.1\r\nHost: ' + bytes(HOST, 'utf-8') + b'\r\nConnection: Keep-Alive\r\nAccept: text/html\r\n\r\n')
@@ -41,17 +36,19 @@ def sendRequest(PROTOCOL, HOST, ENDPOINT, PORT):
         #         break
         #     response += data
         # data = parseResp(response)
-        data = parseResp(s.recv(1024))
+        data = parseResp(s.recv(1024 * 4))
+        print(data)
         print("Received: ", repr(data))
         print(data.get('HTTP/1.1'))
         print(data.get('HTTP/1.0'))
-        # if (data.get('HTTP/1.1') == '302 Moved Temporarily' or '301 Moved Permanently'):
-        #     print('moved 1.1')
-        #     match = parseURL(data.get('Location'))
-        #     PROTOCOL = match.group(2).upper()
-        #     ENDPOINT = match.group(3)
-        #     print(match.group(3)+ "\n")
-        #     sendRequest(PROTOCOL, HOST, PORT, ENDPOINT)
+        if (data.get('HTTP/1.1') == ('302 Moved Temporarily' or '301 Moved Permanently')):
+            print('moved 1.1')
+            print(data.get('Location'))
+            match = parseURL(data.get('Location'))
+            PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
+            print(ENDPOINT)
+            data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
+            data = parseResp(s.recv(1024 * 4))
         if (data.get('HTTP/1.0') == ('302 Moved Temporarily' or '301 Moved Permanently')):
             print('moved 1.0')
             print(data.get('Location'))
@@ -59,10 +56,9 @@ def sendRequest(PROTOCOL, HOST, ENDPOINT, PORT):
             PROTOCOL, HOST, ENDPOINT, PORT = assignRequestParameters(match)
             print(ENDPOINT)
             data = sendRequest(PROTOCOL, HOST, ENDPOINT, PORT)
-            data = parseResp(s.recv(1024))
+            data = parseResp(s.recv(1024 * 4))
         else:
             return data
-    return data
 
 def parseResp(data):
     list = data.decode().split('\r\n')
@@ -95,6 +91,12 @@ def assignRequestParameters(match):
         else:
             PORT = int(80)
     print("Port: " + str(PORT))
+    print("Endpoint: " + str(ENDPOINT))
+    print("-----Request Header-----")
+    print("GET " + PROTOCOL.lower() + "://" + HOST + ENDPOINT + ' ' + PROTOCOL + "/1.1")
+    print("Host: " + HOST)
+    print("Connection: Keep-Alive")
+    print("-----Request End-----")
     return PROTOCOL, HOST, ENDPOINT, PORT
 
 if __name__ == '__main__':
