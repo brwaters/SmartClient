@@ -61,7 +61,6 @@ def sendRequest(PROTOCOL, HOST, ENDPOINT, PORT):
         else:
             supportHTTP2 = False
         passProtected = data.get('HTTP/1.1') == '401 Unauthorized' and 'WWW-Authenticate' in data
-        print(data.get('HTTP/1.1'))
         # Check for redirection
         if data.get('HTTP/1.1') in ('302 Moved Temporarily', '301 Moved Permanently'):
             location = data.get('Location')
@@ -75,9 +74,13 @@ def parseResp(data):
     data = data.decode(errors='ignore')
     header, _, body = data.partition('\r\n\r\n')
     list = header.split('\r\n')
-    d = dict(re.split(r'[\s|:]', each, 1) for each in list if each !='')
-    d = {k.lstrip():v.lstrip() for (k, v) in d.items()}
+    d = {}
 
+    httpVer, _, status = list[0].partition(' ')
+    d[httpVer] = status
+    d2 = dict(re.split(r'[:]', each, 1) for each in list[1:] if each !='')
+    d2 = {k.lstrip():v.lstrip() for (k, v) in d2.items()}
+    d.update(d2)
     bodysize = 1000
     if len(body) > bodysize:
         body = body[:bodysize] + '\n...[Truncated]'
@@ -110,22 +113,10 @@ def assignRequestParameters(match):
     print('-----Request Header-----')
     print('GET ' + PROTOCOL.lower() + '://' + HOST + ENDPOINT + ' ' + PROTOCOL + '/1.1')
     print('Host: ' + HOST)
-    print('Connection: Keep-Alive')
+    print('Connection: close')
     print('-----Request End-----')
     return PROTOCOL, HOST, ENDPOINT, PORT
 
-# def supportHTTP2(HOSTNAME):
-#     # This is for checking HTTPS from tutorials
-#     context = ssl.create_default_context()
-#     context.set_alpn_protocols(['http/1.1','h2'])
-#     conn = context.wrap_socket(socket.socket(socket.AF_INET), server_hostname=HOSTNAME)
-#     conn.connect((HOSTNAME, 443))
-#     conn.sendall(b'GET / HTTP/1.1\r\nHost: ' + bytes(HOSTNAME, 'utf-8')+ b'\r\n\r\n')
-#     list =  conn.selected_alpn_protocol()
-#     if list and'h2' in list:
-#         return True
-#     else:
-#         return False
 
 if __name__ == '__main__':
     main()
