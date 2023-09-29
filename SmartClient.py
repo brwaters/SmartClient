@@ -31,6 +31,7 @@ def main():
             print('Password Protected')
         else:
             print('Not Password Protected')
+        parseCookies(data, HOST)
         print('-----Report End-----')
     except Exception as e:
         print(e)
@@ -116,6 +117,26 @@ def assignRequestParameters(match):
     print('Connection: close')
     print('-----Request End-----')
     return PROTOCOL, HOST, ENDPOINT, PORT
+
+def parseCookies(data, HOST):
+    cookies = [value for key, value in data.items() if key.lower() == 'set-cookie']
+
+    if cookies:
+        print('-----Cookies-----')
+        for cookie in cookies:
+            components = cookie.split(";")
+            name, value = components[0].split("=", 1)
+            print('cookie name: ' + name.strip() + ', domain name: ' + HOST)
+
+            for comp in components[1:]:
+                comp = comp.strip()
+                if 'expires' in comp.lower():
+                    expires = comp.split("=")[1].strip()
+                    print('cookie name: ' + name.strip() + ', expires time: ' + expires + '; domain name: ' + HOST)
+                elif 'domain' in comp.lower():
+                    domain = comp.split("=")[1].strip()
+                    print('cookie name: ' + name.strip() + ', domain name: ' + domain)
+        print('-----Cookies End-----')
 
 
 if __name__ == '__main__':
